@@ -1,0 +1,26 @@
+[package]
+name = "fingertwister"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+macroquad = "=0.4.13"
+
+[package.metadata.android]
+package_name = "sk.fingertwister.fingertwister"
+label = "Finger Twister"
+version_code = 1
+android_version = 36
+target_sdk_version = 36
+min_sdk_version = 21
+build_targets = ["aarch64-linux-android"]
+
+[package.metadata.android.application_attributes]
+"android:appCategory" = "game"
+
+[package.metadata.android.activity_attributes]
+"android:screenOrientation" = "portrait"
+"android:exported" = "true"
+
+[profile.dev]
+opt-level = 2

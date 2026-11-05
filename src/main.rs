@@ -15,9 +15,9 @@ const COLORS: [Color; 4] = [
 ];
 const BOARD: Rect = Rect {
     x: 12.,
-    y: 300.,
+    y: 375.,
     w: 416.,
-    h: 376.,
+    h: 301.,
 };
 
 fn conf() -> Conf {
@@ -100,7 +100,7 @@ fn board(g: &Game, bounds: Rect, hint: Option<f32>) {
             radius,
             Color::new(c.r * brightness, c.g * brightness, c.b * brightness, 1.),
         );
-        let fs = (radius * 0.48).clamp(14., 32.);
+        let fs = (radius * 0.48).clamp(6., 32.);
         let mark = ["I", "II", "III", "IV"][color];
         let mw = measure_text(mark, None, fs as u16, 1.).width;
         text(mark, center.x - mw / 2., center.y + fs * 0.35, fs, BG);
@@ -124,7 +124,16 @@ fn board(g: &Game, bounds: Rect, hint: Option<f32>) {
         }
         if held {
             draw_circle(center.x, center.y - radius * 0.52, fs * 0.7, BG);
-            let label = (g.fingers.iter().position(|f| f.cell == i).unwrap() + 1).to_string();
+            let finger = g.fingers.iter().find(|f| f.cell == i).unwrap();
+            let label = if finger.removable {
+                "PUST".to_string()
+            } else {
+                finger.order.to_string()
+            };
+            let fs = if finger.removable { fs * 0.55 } else { fs };
+            if finger.removable {
+                draw_circle_lines(center.x, center.y, radius - 3., 3., WHITE);
+            }
             let mw = measure_text(&label, None, fs as u16, 1.).width;
             text(
                 &label,
@@ -143,6 +152,7 @@ async fn main() {
     let mut columns = 4;
     let mut rows = 4;
     let mut seconds = 5.;
+    let mut release_after = 5;
     let mut preview = Game::new(columns, rows, seconds, seed(), 0.);
     let mut game: Option<Game> = None;
     let mut armed = false;
@@ -197,17 +207,20 @@ async fn main() {
                 ("POCET RIADKOV / VYSKA", 173., &mut rows),
             ] {
                 text(label, 18., y, 17., MUTED);
-                for (index, n) in (3..=6).enumerate() {
-                    if button(
-                        Rect::new(16. + index as f32 * 104., y + 10., 96., 36.),
-                        &n.to_string(),
-                        *value == n,
-                        click,
-                    ) {
-                        *value = n;
-                    }
+                if button(Rect::new(16., y + 10., 80., 36.), "-", false, click) {
+                    *value = value.saturating_sub(1).max(3);
+                }
+                button(
+                    Rect::new(104., y + 10., 232., 36.),
+                    &value.to_string(),
+                    true,
+                    None,
+                );
+                if button(Rect::new(344., y + 10., 80., 36.), "+", false, click) {
+                    *value = (*value + 1).min(12);
                 }
             }
+
             if preview.columns != columns || preview.rows != rows {
                 preview = Game::new(columns, rows, seconds, seed(), 0.);
             }
@@ -222,9 +235,20 @@ async fn main() {
                     seconds = value;
                 }
             }
+            text("UVOLNOVANIE PRSTOV", 18., 314., 17., MUTED);
+            for (index, limit) in [5, 10].into_iter().enumerate() {
+                if button(
+                    Rect::new(16. + index as f32 * 208., 326., 200., 38.),
+                    &format!("Po {limit} prstoch"),
+                    release_after == limit,
+                    click,
+                ) {
+                    release_after = limit;
+                }
+            }
             board(&preview, BOARD, None);
             centered(
-                "Pridaj prst na zvyraznenu farbu. Ostatne drz.",
+                "Pridaj prst na farbu. PUST = mozes zdvihnut.",
                 703.,
                 18.,
                 MUTED,
@@ -243,8 +267,21 @@ async fn main() {
             {
                 practice = !practice;
             }
-            if button(Rect::new(16., 764., 408., 44.), "HRAT", true, click) {
-                game = Some(Game::new(columns, rows, seconds, seed(), get_time()));
+            let fits = columns * rows >= release_after;
+            if button(
+                Rect::new(16., 764., 408., 44.),
+                if fits {
+                    "HRAT"
+                } else {
+                    "ZVACSI MRIEZKU PRE 10 PRSTOV"
+                },
+                fits,
+                click,
+            ) && fits
+            {
+                let mut next = Game::new(columns, rows, seconds, seed(), get_time());
+                next.release_after = release_after;
+                game = Some(next);
                 armed = false;
                 virtual_contacts.clear();
             }
@@ -315,12 +352,7 @@ async fn main() {
                 if let Outcome::Lost(reason) = g.outcome {
                     centered(reason, 197., 18., COLORS[0]);
                 }
-                centered(
-                    &format!("Udrzane prsty: {}", g.fingers.len()),
-                    234.,
-                    23.,
-                    MUTED,
-                );
+                centered(&format!("Polozene prsty: {}", g.placed), 234., 23., MUTED);
                 board(g, BOARD, None);
             }
             let terminal = g.outcome != Outcome::Playing;

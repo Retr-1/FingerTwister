@@ -4,13 +4,15 @@ Mobilna hra v Ruste s Macroquad 0.4.13. Pouziva rovnaky zaklad a Android Docker 
 
 ## Pravidla
 
-- Vyber samostatne pocet stlpcov (sirka) a riadkov (vyska), kazdy od 3 do 6, a limit 3, 5 alebo 8 sekund na novy prst.
+- Vyber samostatne pocet stlpcov (sirka) a riadkov (vyska), kazdy od 3 do 12 tlacidlami minus/plus, a limit 3, 5 alebo 8 sekund na novy prst.
 - Po stlaceni HRAT uvolni displej. Potom zacne prvy casovy limit.
 - Pocas hry zabera mriezka celu dostupnu plochu obrazovky, bez titulku, nastaveni a tlacidiel. Bunky su kruhy rozmiestnene podla sirky aj vysky zariadenia. Dotyk musi zostat v kruhu; medzery medzi kruhmi nepatria do ziadnej bunky.
 - Poloz jeden novy prst na volne zvyraznene policko. Pozadovana farba ma pulzujuci biely ramik; pasik priamo v jej polickach ukazuje zostavajuci cas. Rimske cisla I–IV rozlisuju farby aj bez vnimania odtiena.
-- Kazdy predchadzajuci prst musi zostat na svojom povodnom policku. Pohyb v ramci policka je povoleny.
-- Zdvihnutie prsta, posun mimo jeho policka, nespravna farba, obsadene policko, viac novych prstov naraz alebo vyprsanie casu znamena prehru.
-- Kazdy spravny prst obnovi casovy limit. Dalsia farba ma vzdy aspon jedno volne policko. Zaplnenie celej mriezky znamena vyhru.
+- Rezim **Po 5 prstoch**: po piatom uspesnom polozeni mozes zdvihnut prvy prst, po siestom druhy a tak dalej.
+- Rezim **Po 10 prstoch**: po desiatom uspesnom polozeni mozes zdvihnut prvy prst, po jedenastom druhy a tak dalej. Mriezka musi mat aspon 10 buniek.
+- Prst, ktory mozes zdvihnut, ma oznacenie **PUST**. Mozes ho aj nadalej drzat; jeho bunka sa uvolni az po skutocnom zdvihnuti. Ostatne prsty musia zostat na svojich kruhoch. Pohyb v ramci kruhu je povoleny.
+- Nepovolene zdvihnutie prsta, posun povinne drzaneho prsta mimo jeho kruhu, nespravna farba, obsadene policko, viac novych prstov naraz alebo vyprsanie casu znamena prehru.
+- Kazdy spravny prst obnovi casovy limit. Dalsia farba ma vzdy policko, ktore je volne alebo ho mozes uvolnit povolenym zdvihnutim. Hra pokracuje po kolach aj po dosiahnuti 5 alebo 10 polozeni; vysledok pocita vsetky uspesne polozene prsty.
 
 Pocet sucasnych dotykov obmedzuje telefon. Ked uz nevie zaznamenat dalsi prst, hra skonci vyprsanim casu. Hra sleduje skutocne ID dotykov; na mobile sa prsty nezamykaju softverovo.
 
@@ -20,7 +22,7 @@ Pocet sucasnych dotykov obmedzuje telefon. Ked uz nevie zaznamenat dalsi prst, h
 cargo run
 ```
 
-Pre skusanie viacerych prstov mysou zapni v menu **MYS: ZAPNUT TRENING**. Kliknutie ponecha virtualny prst na policku, opatovne kliknutie ho zdvihne a sposobi prehru. Ide o trening, nie o fyzicke drzanie dotykov. Bez treningu mys predstavuje jeden drzany prst. Dotykova obrazovka pouziva skutocny multitouch.
+Pre skusanie viacerych prstov mysou zapni v menu **MYS: ZAPNUT TRENING**. Kliknutie ponecha virtualny prst na policku, opatovne kliknutie ho zdvihne. Ak este nema oznacenie PUST, znamena to prehru. Ide o trening, nie o fyzicke drzanie dotykov. Bez treningu mys predstavuje jeden drzany prst. Dotykova obrazovka pouziva skutocny multitouch.
 
 ## Android APK
 

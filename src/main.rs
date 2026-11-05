@@ -83,7 +83,11 @@ fn cell_at(p: Vec2, columns: usize, rows: usize, bounds: Rect) -> Option<usize> 
     (p.distance_squared(center) <= radius * radius).then_some(cell)
 }
 
-fn board(g: &Game, bounds: Rect, hint: Option<f32>) {
+fn board(g: &Game, bounds: Rect, hint: Option<f32>, feedback: Option<(usize, f64)>) {
+    let feedback = feedback.and_then(|(cell, time)| {
+        let progress = ((get_time() - time) / 0.65) as f32;
+        (0. ..1.).contains(&progress).then_some((cell, progress))
+    });
     for (i, &color) in g.cells.iter().enumerate() {
         let (center, radius) = circle_geometry(i, g.columns, g.rows, bounds);
         let held = g.occupied(i);
@@ -123,26 +127,95 @@ fn board(g: &Game, bounds: Rect, hint: Option<f32>) {
             );
         }
         if held {
-            draw_circle(center.x, center.y - radius * 0.52, fs * 0.7, BG);
             let finger = g.fingers.iter().find(|f| f.cell == i).unwrap();
-            let label = if finger.removable {
-                "PUST".to_string()
-            } else {
-                finger.order.to_string()
-            };
-            let fs = if finger.removable { fs * 0.55 } else { fs };
             if finger.removable {
-                draw_circle_lines(center.x, center.y, radius - 3., 3., WHITE);
+                // A white disk and dark lift symbol remain distinct from target rings.
+                let pulse = 0.5 + 0.5 * (get_time() as f32 * 4.).sin();
+                draw_circle(center.x, center.y, radius * 0.93, WHITE);
+                draw_circle_lines(center.x, center.y, radius - 2., 3., BG);
+                draw_circle_lines(center.x, center.y, radius * (0.78 + pulse * 0.08), 2., BG);
+                let label_size = radius * 0.48;
+                let width = measure_text("PUST", None, label_size as u16, 1.).width;
+                text(
+                    "PUST",
+                    center.x - width / 2.,
+                    center.y + radius * 0.5,
+                    label_size,
+                    BG,
+                );
+                let arrow_y = center.y - radius * (0.28 + pulse * 0.08);
+                let stroke = (radius * 0.07).max(1.5);
+                draw_line(
+                    center.x,
+                    center.y + radius * 0.05,
+                    center.x,
+                    arrow_y,
+                    stroke,
+                    BG,
+                );
+                draw_line(
+                    center.x,
+                    arrow_y,
+                    center.x - radius * 0.19,
+                    arrow_y + radius * 0.19,
+                    stroke,
+                    BG,
+                );
+                draw_line(
+                    center.x,
+                    arrow_y,
+                    center.x + radius * 0.19,
+                    arrow_y + radius * 0.19,
+                    stroke,
+                    BG,
+                );
+            } else {
+                draw_circle(center.x, center.y - radius * 0.52, fs * 0.7, BG);
+                let label = finger.order.to_string();
+                let mw = measure_text(&label, None, fs as u16, 1.).width;
+                text(
+                    &label,
+                    center.x - mw / 2.,
+                    center.y - radius * 0.52 + fs * 0.35,
+                    fs,
+                    WHITE,
+                );
             }
-            let mw = measure_text(&label, None, fs as u16, 1.).width;
-            text(
-                &label,
-                center.x - mw / 2.,
-                center.y - radius * 0.52 + fs * 0.35,
-                fs,
-                WHITE,
-            );
         }
+        if let Some((accepted, progress)) = feedback {
+            let flash = Color::new(1., 1., 1., 1. - progress);
+            if accepted == i {
+                draw_circle_lines(
+                    center.x,
+                    center.y,
+                    radius * (0.55 + progress * 0.43),
+                    (radius * 0.1).max(2.),
+                    flash,
+                );
+                draw_circle_lines(center.x, center.y, radius - 2., 4., flash);
+            }
+            if target {
+                // All next targets visibly acknowledge a new round, even if its color repeats.
+                draw_circle_lines(
+                    center.x,
+                    center.y,
+                    radius * (0.72 + progress * 0.25),
+                    4.,
+                    flash,
+                );
+            }
+        }
+    }
+    if let Some((_, progress)) = feedback {
+        let thickness = bounds.w.min(bounds.h) * 0.012;
+        draw_rectangle_lines(
+            bounds.x + thickness / 2.,
+            bounds.y + thickness / 2.,
+            bounds.w - thickness,
+            bounds.h - thickness,
+            thickness,
+            Color::new(0.3, 1., 0.65, (1. - progress) * 0.9),
+        );
     }
 }
 
@@ -159,6 +232,7 @@ async fn main() {
     let mut practice = false;
     let mut virtual_contacts: Vec<(u64, Option<usize>)> = Vec::new();
     let mut next_id = 1u64;
+    let mut feedback: Option<(usize, f64)> = None;
     loop {
         let playing = game.as_ref().is_some_and(|g| g.outcome == Outcome::Playing);
         let scale = if playing {
@@ -246,7 +320,7 @@ async fn main() {
                     release_after = limit;
                 }
             }
-            board(&preview, BOARD, None);
+            board(&preview, BOARD, None, None);
             centered(
                 "Pridaj prst na farbu. PUST = mozes zdvihnut.",
                 703.,
@@ -284,6 +358,7 @@ async fn main() {
                 game = Some(next);
                 armed = false;
                 virtual_contacts.clear();
+                feedback = None;
             }
         } else if let Some(g) = game.as_mut() {
             let bounds = Rect::new(0., 0., screen_width(), screen_height());
@@ -328,7 +403,13 @@ async fn main() {
                         ),
                     ));
                 }
+                let before = g.placed;
                 g.update(&contacts, get_time());
+                if g.placed > before {
+                    if let Some(finger) = g.fingers.iter().find(|f| f.order == g.placed) {
+                        feedback = Some((finger.cell, get_time()));
+                    }
+                }
             }
             if playing {
                 let remaining = if armed {
@@ -336,7 +417,12 @@ async fn main() {
                 } else {
                     seconds
                 };
-                board(g, bounds, Some((remaining / seconds).clamp(0., 1.) as f32));
+                board(
+                    g,
+                    bounds,
+                    Some((remaining / seconds).clamp(0., 1.) as f32),
+                    feedback,
+                );
             } else {
                 centered("FINGER / TWISTER", 43., 32., WHITE);
                 centered(
@@ -353,7 +439,7 @@ async fn main() {
                     centered(reason, 197., 18., COLORS[0]);
                 }
                 centered(&format!("Polozene prsty: {}", g.placed), 234., 23., MUTED);
-                board(g, BOARD, None);
+                board(g, BOARD, None, None);
             }
             let terminal = g.outcome != Outcome::Playing;
             // Restart only after the losing contacts have been released.

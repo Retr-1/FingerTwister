@@ -10,7 +10,8 @@ Mobilna hra v Ruste s Macroquad 0.4.13. Pouziva rovnaky zaklad a Android Docker 
 - Poloz jeden novy prst na volne zvyraznene policko. Pozadovana farba ma pulzujuci biely ramik; pasik priamo v jej polickach ukazuje zostavajuci cas. Rimske cisla I–IV rozlisuju farby aj bez vnimania odtiena.
 - Rezim **Po 5 prstoch**: po piatom uspesnom polozeni mozes zdvihnut prvy prst, po siestom druhy a tak dalej.
 - Rezim **Po 10 prstoch**: po desiatom uspesnom polozeni mozes zdvihnut prvy prst, po jedenastom druhy a tak dalej. Mriezka musi mat aspon 10 buniek.
-- Prst, ktory mozes zdvihnut, ma oznacenie **PUST**. Mozes ho aj nadalej drzat; jeho bunka sa uvolni az po skutocnom zdvihnuti. Ostatne prsty musia zostat na svojich kruhoch. Pohyb v ramci kruhu je povoleny.
+- Kazde uspesne polozenie potvrdi 0,65-sekundova animacia kruhov a zeleny zablesk okraja obrazovky, aj ked dalsia farba zostane rovnaka.
+- Prst, ktory mozes zdvihnut, ma vyrazne bielu bunku, pulzujuci tmavy kruh, sipku nahor a velke oznacenie **PUST**. Mozes ho aj nadalej drzat; jeho bunka sa uvolni az po skutocnom zdvihnuti. Ostatne prsty musia zostat na svojich kruhoch. Pohyb v ramci kruhu je povoleny.
 - Nepovolene zdvihnutie prsta, posun povinne drzaneho prsta mimo jeho kruhu, nespravna farba, obsadene policko, viac novych prstov naraz alebo vyprsanie casu znamena prehru.
 - Kazdy spravny prst obnovi casovy limit. Dalsia farba ma vzdy policko, ktore je volne alebo ho mozes uvolnit povolenym zdvihnutim. Hra pokracuje po kolach aj po dosiahnuti 5 alebo 10 polozeni; vysledok pocita vsetky uspesne polozene prsty.
 
